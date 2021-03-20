@@ -1,0 +1,181 @@
+# utils
+from utils import get
+from utils import post
+
+# typing
+from typing import List
+
+import urllib3
+from collections import Counter
+
+class Dog(object):
+    """
+    Dog object that is composed of the id, name and breed of the dog
+
+    To initialize:
+    :param id: dog id
+    :param name: dog name
+    :param breed: dog breed id
+
+    USAGE:
+        >>> dog = Dog(id=1, name='Bobby', breed=1)
+    """
+    def __init__(self, id: int, name: str, breed: int):
+        self.id = id
+        self.name = name
+        self.breed = breed
+
+
+class Breed(object):
+    """
+    Breed object that is composed of the id and the name of the breed.
+
+    To initialize:
+    :param id: breed id
+    :param name: breed name
+
+    Also, breed has a list of dogs for development purposes
+    :field dogs: breed dog list
+
+    USAGE:
+        >>> breed = Breed(id=1, name='Kiltro')
+        >>> dog = Dog(id=1, name='Cachupin', breed=breed.id)
+        >>> breed.add_dog(dog)
+        >>> breed.dogs_count()
+        1
+    """
+    def __init__(self, id: int, name: str):
+        self.id = id
+        self.name = name
+        self.dogs: List[Dog] = []
+
+    def add_dog(self, dog: Dog):
+        self.dogs.append(dog)
+
+    def dogs_count(self) -> int:
+        return len(self.dogs)
+
+
+class DogHouse(object):
+    """
+    Doghouse object that manipulates information on breeds and dogs.
+    We expect you implement all the methods that are not implemented
+    so that the flow works correctly
+
+
+    DogHouse has a list of breeds and a list of dogs.
+    :field breeds: breed list
+    :field dogs: dog list
+
+    USAGE:
+        >>> dog_house = DogHouse()
+        >>> dog_house.get_data(token='some_token')
+        >>> total_dogs = dog_house.get_total_dogs()
+        >>> common_breed = dog_house.get_common_breed()
+        >>> common_dog_name = dog_house.get_common_dog_name()
+        >>> total_breeds = dog_house.get_total_breeds()
+        >>> data = {  # add some data
+        ...     'total_dogs': total_dogs,
+        ...     'total_breeds': total_breeds,
+        ...     'common_breed': common_breed.name,
+        ...     'common_dog_name': common_dog_name,
+        ... }
+        >>> token = 'some token'
+        >>> dog_house.send_data(data=data, token=token)
+    """
+    def __init__(self):
+        self.breeds: List[Breed] = []
+        self.dogs: List[Dog] = []
+
+    def get_data(self, token: str):
+        """
+        You must get breeds and dogs data from our API: http://dogs.magnet.cl
+
+        We recommend using the Dog and Breed classes to store
+        the information, also consider the dogs and breeds fields
+        of the DogHouse class to perform data manipulation.
+        """
+
+        url_breed = 'http://dogs.magnet.cl/api/v1/breeds/'
+        url_dog = 'http://dogs.magnet.cl/api/v1/dogs/'
+
+        data = get(url_breed, token)
+        while True:
+            for breed in data['results']:
+                self.breeds.append(Breed(breed['id'], breed['name']))
+            if data['next'] == None:
+                break
+            data = get(data['next'], token)
+
+        data = get(url_dog, token)
+        while True:
+            for dog in data['results']:
+                self.dogs.append(Dog(dog['id'], dog['name'], dog['breed']))
+            if data['next'] == None:
+                break
+            data = get(data['next'], token)
+
+        #raise NotImplementedError
+
+    def get_total_breeds(self) -> int:
+        """
+        Returns the amount of different breeds in the doghouse
+        """
+        return len(self.breeds)
+
+        #raise NotImplementedError
+
+    def get_total_dogs(self) -> int:
+        """
+        Returns the amount of dogs in the doghouse
+        """
+        return len(self.dogs)
+        
+        #raise NotImplementedError
+
+    def get_common_breed(self) -> Breed:
+        """
+        Returns the most common breed in the doghouse
+        """
+
+        list_breed = [d.breed for d in self.dogs]
+
+        most_common_id = max(set(list_breed), key=list_breed.count)
+
+        most_common_breed = next((x for x in self.breeds if x.id == most_common_id), None)
+
+        return most_common_breed
+
+        #raise NotImplementedError
+
+    def get_common_dog_name(self) -> str:
+        """
+        Returns the most common dog name in the doghouse
+        """
+        list_dogs_names = [d.name for d in self.dogs]
+
+        most_common_name = max(set(list_dogs_names), key=list_dogs_names.count)
+
+        return most_common_name
+
+        #raise NotImplementedError
+
+    def send_data(self, data: dict, token: str):
+        """
+        You must send the answers obtained from the implemented
+        methods, the parameters are defined in the documentation.
+
+        Important!! We don't tell you if the answer is correct
+        """
+
+        url ='http://dogs.magnet.cl/api/v1/answer/'
+        myData = {
+        'totalBreeds': data['total_breeds'],
+        'totalDogs': data['total_dogs'],
+        'commonBreed': data['common_breed'],
+        'commonDogName': data['common_dog_name'],
+        }
+
+        post(url, myData, token)
+
+        #raise NotImplementedError
